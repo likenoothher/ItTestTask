@@ -1,7 +1,6 @@
 package com.azierets.restapijwt.exceptionhandler;
 
 import com.azierets.restapijwt.dto.ValidationViolationDto;
-import com.azierets.restapijwt.exceptionhandler.exception.JwtAuthException;
 import com.azierets.restapijwt.exceptionhandler.exception.UserIsAlreadyRegisteredException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -48,15 +47,6 @@ public class AppControllerAdvice {
     HashMap<String, List<ValidationViolationDto>> onBadCredentialsException(BadCredentialsException e) {
         return new HashMap<String, List<ValidationViolationDto>>() {{
             put("error", Collections.singletonList(new ValidationViolationDto("email or password", e.getMessage())));
-        }};
-    }
-
-    @ExceptionHandler(JwtAuthException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ResponseBody
-    HashMap<String, List<ValidationViolationDto>> onJwtAuthException(JwtAuthException e) {
-        return new HashMap<String, List<ValidationViolationDto>>() {{
-            put("error", Collections.singletonList(new ValidationViolationDto("token", e.getMessage())));
         }};
     }
 

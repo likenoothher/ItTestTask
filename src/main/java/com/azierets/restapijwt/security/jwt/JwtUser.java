@@ -1,7 +1,7 @@
 package com.azierets.restapijwt.security.jwt;
 
 import com.azierets.restapijwt.model.User;
-import lombok.RequiredArgsConstructor;
+import com.azierets.restapijwt.model.UserRole;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -9,23 +9,31 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Collections;
 
-@RequiredArgsConstructor
 public class JwtUser implements UserDetails {
-    private final User user;
+
+    private final String username;
+    private final String password;
+    private final UserRole role;
+
+    public JwtUser(User user) {
+        this.username = user.getEmail();
+        this.password = user.getPassword();
+        this.role = user.getRole();
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
     @Override
     public String getPassword() {
-        return user.getPassword();
+        return password;
     }
 
     @Override
     public String getUsername() {
-        return user.getEmail();
+        return username;
     }
 
     @Override
