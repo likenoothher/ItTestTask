@@ -1,8 +1,8 @@
 package com.azierets.restapijwt.exceptionhandler;
 
 import com.azierets.restapijwt.dto.ValidationViolationDto;
+import com.azierets.restapijwt.exceptionhandler.exception.JwtAuthException;
 import com.azierets.restapijwt.exceptionhandler.exception.UserIsAlreadyRegisteredException;
-import com.azierets.restapijwt.security.jwt.JwtAuthException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;

@@ -1,5 +1,6 @@
 package com.azierets.restapijwt.security.jwt;
 
+import com.azierets.restapijwt.exceptionhandler.exception.JwtAuthException;
 import com.azierets.restapijwt.model.User;
 import io.jsonwebtoken.*;
 import lombok.RequiredArgsConstructor;
@@ -22,14 +23,14 @@ public class JwtService {
     @Value("${jwt.token.secret}")
     private String tokenSecret;
 
-    @PostConstruct
-    private void encodeTokenSecret() {
-        this.tokenSecret = Base64.getEncoder().encodeToString(tokenSecret.getBytes());
-    }
-
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @PostConstruct
+    private void encodeTokenSecret() {
+        this.tokenSecret = Base64.getEncoder().encodeToString(tokenSecret.getBytes());
     }
 
     public String generateToken(User user) {

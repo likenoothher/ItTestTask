@@ -21,6 +21,7 @@ public class HelloRestController {
     @GetMapping({"", "/"})
     public ResponseEntity<?> hello(Principal principal) {
         User user = userService.findByEmail(principal.getName());
-        return new ResponseEntity<>("Hello, " + user.getFirstName(), HttpStatus.OK);
+        return new ResponseEntity<>("Hello, "
+                + user.getFirstName(), HttpStatus.OK);
     }
 }

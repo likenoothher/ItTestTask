@@ -1,8 +1,7 @@
 package com.azierets.restapijwt.config;
 
 import com.azierets.restapijwt.security.jwt.JwtFilter;
-import com.azierets.restapijwt.security.jwt.JwtService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -13,15 +12,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-    private final JwtService jwtService;
     private final JwtFilter jwtFilter;
-
-    @Autowired
-    public SecurityConfig(JwtService jwtService, JwtFilter jwtFilter) {
-        this.jwtService = jwtService;
-        this.jwtFilter = jwtFilter;
-    }
 
     @Bean
     @Override
