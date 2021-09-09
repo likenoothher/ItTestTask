@@ -97,6 +97,10 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+<!--                    <environmentVariables>-->
+<!--                        <SPRING_DATASOURCE_PASSWORD>postgrespass</SPRING_DATASOURCE_PASSWORD>-->
+<!--                        <LIQUIBASE_DATASOURCE_PASSWORD>postgrespass</LIQUIBASE_DATASOURCE_PASSWORD>-->
+<!--                    </environmentVariables>-->
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

@@ -2,7 +2,11 @@ package com.azierets.restapijwt.security.jwt;
 
 import com.azierets.restapijwt.exceptionhandler.exception.JwtAuthException;
 import com.azierets.restapijwt.model.User;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -64,9 +68,9 @@ public class JwtService {
             Jws<Claims> claims = Jwts.parser()
                     .setSigningKey(tokenSecret)
                     .parseClaimsJws(token);
-            return !claims.getBody()
+            return claims.getBody()
                     .getExpiration()
-                    .before(new Date());
+                    .after(new Date());
         } catch (JwtException | IllegalArgumentException e) {
             throw new JwtAuthException("Token is expired or invalid");
         }

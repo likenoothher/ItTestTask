@@ -1,15 +1,16 @@
 package com.azierets.restapijwt.restcontroller;
 
 import com.azierets.restapijwt.dto.AuthRequestDto;
+import com.azierets.restapijwt.dto.CredentialsDto;
 import com.azierets.restapijwt.dto.RegisterRequestDto;
 import com.azierets.restapijwt.exceptionhandler.exception.UserIsAlreadyRegisteredException;
 import com.azierets.restapijwt.model.User;
+import com.azierets.restapijwt.security.jwt.JwtService;
 import com.azierets.restapijwt.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -21,13 +22,14 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.text.MatchesPattern.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
@@ -37,12 +39,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(
         locations = "classpath:application-test.properties")
 class AuthRestControllerTest {
+
     @Autowired
     ObjectMapper mapper;
-    @Value("${test.token}")
-    private String testToken;
+
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private JwtService jwtService;
 
     @MockBean
     private AuthenticationManager authenticationManager;
@@ -63,9 +68,12 @@ class AuthRestControllerTest {
         registeredUser.setFirstName("testFirstName");
         registeredUser.setLastName("testLastName");
 
+        String testToken = jwtService.generateToken(registeredUser);
+
         when(authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(requestDto.getEmail(),
                 requestDto.getPassword()))).thenReturn(null);
-        when(userService.generateToken(requestDto)).thenReturn(testToken);
+        when(userService.authenticate(requestDto)).thenReturn(new CredentialsDto(registeredUser.getEmail(),
+                testToken));
         String tokenRegex = "^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*$";
 
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.post("/login")
@@ -75,10 +83,8 @@ class AuthRestControllerTest {
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers
-                        .jsonPath("$.email", Matchers.is("test@email.com")))
-                .andExpect(MockMvcResultMatchers
-                        .jsonPath("$.token", matchesPattern(tokenRegex)));
+                .andExpect(jsonPath("$.email", Matchers.is("test@email.com")))
+                .andExpect(jsonPath("$.token", matchesPattern(tokenRegex)));
     }
 
     @Test
@@ -94,10 +100,8 @@ class AuthRestControllerTest {
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isBadRequest())
-                .andExpect(MockMvcResultMatchers
-                        .jsonPath("$.errors[0].message", Matchers.is("must not be blank")))
-                .andExpect(MockMvcResultMatchers
-                        .jsonPath("$.errors[1].message", Matchers.is("must not be blank")));
+                .andExpect(jsonPath("$.errors[0].message", Matchers.is("must not be blank")))
+                .andExpect(jsonPath("$.errors[1].message", Matchers.is("must not be blank")));
     }
 
     @Test
@@ -105,10 +109,10 @@ class AuthRestControllerTest {
         AuthRequestDto requestDto = new AuthRequestDto();
         requestDto.setEmail("test@email.com");
         requestDto.setPassword("password");
+
         BadCredentialsException badCredentialsException = new BadCredentialsException("invalid email or password");
 
-        when(authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(requestDto.getEmail(),
-                requestDto.getPassword()))).thenThrow(badCredentialsException);
+        when(userService.authenticate(requestDto)).thenThrow(badCredentialsException);
 
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.post("/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -131,12 +135,6 @@ class AuthRestControllerTest {
         requestDto.setFirstName("firstName");
         requestDto.setLastName("lastName");
 
-        User newUser = new User();
-        newUser.setPassword(requestDto.getPassword());
-        newUser.setEmail(requestDto.getEmail());
-        newUser.setFirstName(requestDto.getFirstName());
-        newUser.setLastName(requestDto.getLastName());
-
         User registeredUser = new User();
         registeredUser.setId(1L);
         registeredUser.setPassword(requestDto.getPassword());
@@ -144,7 +142,11 @@ class AuthRestControllerTest {
         registeredUser.setFirstName(requestDto.getFirstName());
         registeredUser.setLastName(requestDto.getLastName());
 
-        when(userService.register(requestDto)).thenReturn(registeredUser);
+        String testToken = jwtService.generateToken(registeredUser);
+        String tokenRegex = "^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*$";
+
+        when(userService.register(requestDto)).thenReturn(new CredentialsDto(registeredUser.getEmail(),
+                testToken));
 
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.post("/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -153,7 +155,8 @@ class AuthRestControllerTest {
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.status", Matchers.is("registered")));
+                .andExpect(jsonPath("$.email", is(registeredUser.getEmail())))
+                .andExpect(jsonPath("$.token", matchesPattern(tokenRegex)));
     }
 
     @Test
@@ -163,13 +166,6 @@ class AuthRestControllerTest {
         requestDto.setPassword("password");
         requestDto.setFirstName("firstName");
         requestDto.setLastName("lastName");
-
-        User alreadyRegisteredUser = new User();
-        alreadyRegisteredUser.setId(1L);
-        alreadyRegisteredUser.setPassword(requestDto.getPassword());
-        alreadyRegisteredUser.setEmail(requestDto.getEmail());
-        alreadyRegisteredUser.setFirstName(requestDto.getFirstName());
-        alreadyRegisteredUser.setLastName(requestDto.getLastName());
 
         when(userService.register(requestDto)).thenThrow(UserIsAlreadyRegisteredException.class);
 
@@ -200,12 +196,9 @@ class AuthRestControllerTest {
         mockMvc.perform(mockRequest)
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof MethodArgumentNotValidException))
-                .andExpect(MockMvcResultMatchers
-                        .jsonPath("$.errors[0].message", Matchers.is("must not be blank")))
-                .andExpect(MockMvcResultMatchers
-                        .jsonPath("$.errors[1].message", Matchers.is("must not be blank")))
-                .andExpect(MockMvcResultMatchers
-                        .jsonPath("$.errors[2].message", Matchers.is("must not be blank")));
+                .andExpect(jsonPath("$.errors[0].message", Matchers.is("must not be blank")))
+                .andExpect(jsonPath("$.errors[1].message", Matchers.is("must not be blank")))
+                .andExpect(jsonPath("$.errors[2].message", Matchers.is("must not be blank")));
 
     }
 }

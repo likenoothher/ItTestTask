@@ -1,6 +1,6 @@
 package com.azierets.restapijwt.restcontroller;
 
-import com.azierets.restapijwt.model.User;
+import com.azierets.restapijwt.dto.GreetingDto;
 import com.azierets.restapijwt.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,8 +19,7 @@ public class HelloRestController {
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping
-    public String hello(Principal principal) {
-        User user = userService.findByEmail(principal.getName());
-        return "Hello, " + user.getFirstName();
+    public GreetingDto hello(Principal principal) {
+        return userService.createGreetingMessage(principal.getName());
     }
 }

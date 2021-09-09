@@ -1,24 +1,29 @@
 package com.azierets.restapijwt.service;
 
 import com.azierets.restapijwt.dto.AuthRequestDto;
+import com.azierets.restapijwt.dto.CredentialsDto;
+import com.azierets.restapijwt.dto.GreetingDto;
 import com.azierets.restapijwt.dto.RegisterRequestDto;
 import com.azierets.restapijwt.model.User;
 import com.azierets.restapijwt.model.UserRole;
 import com.azierets.restapijwt.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.context.TestPropertySource;
 
-import java.util.regex.Pattern;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -29,6 +34,9 @@ class UserServiceImplTest {
     @MockBean
     private UserRepository userRepository;
 
+    @MockBean
+    private AuthenticationManager authenticationManager;
+
     @Autowired
     private UserService userService;
 
@@ -38,8 +46,9 @@ class UserServiceImplTest {
 
     @BeforeEach
     public void setUp() {
+
         user = new User();
-        user.setEmail("email@test.com");
+        user.setEmail("test@email.com");
         user.setPassword("password");
         user.setFirstName("testFirstName");
         user.setLastName("testLastName");
@@ -57,16 +66,34 @@ class UserServiceImplTest {
     }
 
     @Test
+    public void whenCreateGreetingMessageEmailExists_thenReturnGreetingDto() {
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
+        GreetingDto dto = userService.createGreetingMessage(user.getEmail());
+
+        assertEquals("Hello, testFirstName", dto.getMessage());
+    }
+
+    @Test
+    public void whenCreateGreetingMessageEmailDoesNotExist_thenThrowNPException() {
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(null);
+        assertThrows(NullPointerException.class, () -> userService.createGreetingMessage(null));
+    }
+
+    @Test
+    public void whenCreateGreetingMessageEmailNull_thenThrowNPException() {
+        when(userRepository.findByEmail(null)).thenReturn(null);
+        assertThrows(NullPointerException.class, () -> userService.createGreetingMessage(null));
+    }
+
+    @Test
     public void whenRegisterUserPassedDtoNotNull_thenReturnUserWithEncryptedPasswordAndRoleUser() {
-        when(userRepository.findByEmail(registerRequestDto.getEmail())).thenReturn(null);
-        user = userService.register(registerRequestDto);
+        when(userRepository.existsByEmail(registerRequestDto.getEmail())).thenReturn(false);
+        CredentialsDto dto = userService.register(registerRequestDto);
 
-        String bCryptRegexPattern = "^\\$2[ayb]\\$.{56}$";
-        Pattern pattern = Pattern.compile(bCryptRegexPattern);
+        String tokenRegex = "^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*$";
 
-        assertEquals(UserRole.USER, user.getRole());
-        assertTrue(pattern.matcher(user.getPassword()).find());
-        Mockito.verify(userRepository, Mockito.times(1)).save(user);
+        assertEquals(user.getEmail(), dto.getEmail());
+        assertTrue(dto.getToken().matches(tokenRegex));
     }
 
     @Test
@@ -81,24 +108,35 @@ class UserServiceImplTest {
     }
 
     @Test
-    public void whenGenerateTokenRequestDtoNotNullUserExist_thenReturnToken() {
+    public void whenAuthenticateRequestDtoNotNullUserExist_thenReturnToken() {
         when(userRepository.findByEmail(registerRequestDto.getEmail())).thenReturn(user);
+        when(authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequestDto.getEmail(),
+                authRequestDto.getPassword()))).thenReturn(null);
 
-        String token = userService.generateToken(authRequestDto);
+        CredentialsDto dto = userService.authenticate(authRequestDto);
         String tokenRegex = "^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*$";
 
-        assertTrue(token.matches(tokenRegex));
+        assertEquals(user.getEmail(), dto.getEmail());
+        assertTrue(dto.getToken().matches(tokenRegex));
     }
 
     @Test
-    public void whenGenerateTokenRequestDtoNull_thenThrowNPException() {
-        assertThrows(NullPointerException.class, () -> userService.generateToken(null));
+    public void whenAuthenticateRequestDtoNull_thenThrowNPException() {
+        assertThrows(NullPointerException.class, () -> userService.authenticate(null));
     }
 
     @Test
-    public void whenGenerateTokenRequestDtoNotNullUserDoesNotExist_thenThrowNPException() {
+    public void whenAuthenticateRequestDtoNotNullUserDoesNotExist_thenThrowNPException() {
         when(userRepository.findByEmail(authRequestDto.getEmail())).thenReturn(null);
-        assertThrows(NullPointerException.class, () -> userService.generateToken(authRequestDto));
+        assertThrows(NullPointerException.class, () -> userService.authenticate(authRequestDto));
+    }
+
+    @Test
+    public void whenAuthenticateRequestDtoNotNullBadCredentials_thenThrowAuthException() {
+        BadCredentialsException badCredentialsException = new BadCredentialsException("invalid email or password");
+        when(authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequestDto.getEmail(),
+                authRequestDto.getPassword()))).thenThrow(badCredentialsException);
+        assertThrows(AuthenticationException.class, () -> userService.authenticate(authRequestDto));
     }
 
     @Test

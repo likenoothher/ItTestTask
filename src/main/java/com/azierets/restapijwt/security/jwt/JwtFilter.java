@@ -1,7 +1,7 @@
 package com.azierets.restapijwt.security.jwt;
 
 import com.azierets.restapijwt.exceptionhandler.exception.JwtAuthException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,10 +19,14 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Component
-@RequiredArgsConstructor
 public class JwtFilter extends GenericFilterBean {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+
+    public JwtFilter(JwtService jwtService, @Lazy UserDetailsService userDetailsService) {
+        this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
+    }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
