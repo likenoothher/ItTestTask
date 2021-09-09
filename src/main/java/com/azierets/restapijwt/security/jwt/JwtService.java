@@ -44,7 +44,11 @@ public class JwtService {
     }
 
     public String getUserEmail(String token) {
-        return Jwts.parser().setSigningKey(tokenSecret).parseClaimsJws(token).getBody().getSubject();
+        return Jwts.parser()
+                .setSigningKey(tokenSecret)
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
 
     public String extractTokenFromRequest(HttpServletRequest request) {
@@ -57,8 +61,12 @@ public class JwtService {
 
     public boolean isTokenValid(String token) {
         try {
-            Jws<Claims> claims = Jwts.parser().setSigningKey(tokenSecret).parseClaimsJws(token);
-            return !claims.getBody().getExpiration().before(new Date());
+            Jws<Claims> claims = Jwts.parser()
+                    .setSigningKey(tokenSecret)
+                    .parseClaimsJws(token);
+            return !claims.getBody()
+                    .getExpiration()
+                    .before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
             throw new JwtAuthException("Token is expired or invalid");
         }

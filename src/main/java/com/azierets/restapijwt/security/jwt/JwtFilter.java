@@ -33,11 +33,16 @@ public class JwtFilter extends GenericFilterBean {
             if (token != null && jwtService.isTokenValid(token)) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(jwtService.getUserEmail(token));
                 Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(auth);
             }
+
         } catch (JwtAuthException e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write(e.getMessage());
+            response
+                    .getWriter()
+                    .write(e.getMessage());
             return;
         }
         filterChain.doFilter(request, response);

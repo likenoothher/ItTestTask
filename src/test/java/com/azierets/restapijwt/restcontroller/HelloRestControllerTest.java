@@ -51,5 +51,4 @@ class HelloRestControllerTest {
                 .andExpect(content().string(containsString("Hello, userFirstName")));
 
     }
-
 }

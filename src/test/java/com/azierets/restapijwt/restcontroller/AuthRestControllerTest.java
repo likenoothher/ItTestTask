@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -36,10 +37,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(
         locations = "classpath:application-test.properties")
 class AuthRestControllerTest {
-
     @Autowired
     ObjectMapper mapper;
-
+    @Value("${test.token}")
+    private String testToken;
     @Autowired
     private MockMvc mockMvc;
 
@@ -64,8 +65,8 @@ class AuthRestControllerTest {
 
         when(authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(requestDto.getEmail(),
                 requestDto.getPassword()))).thenReturn(null);
-        when(userService.findByEmail("test@email.com")).thenReturn(registeredUser);
-        String regex = "^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*$";
+        when(userService.generateToken(requestDto)).thenReturn(testToken);
+        String tokenRegex = "^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*$";
 
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.post("/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -74,8 +75,10 @@ class AuthRestControllerTest {
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.email", Matchers.is("test@email.com")))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.token", matchesPattern(regex)));
+                .andExpect(MockMvcResultMatchers
+                        .jsonPath("$.email", Matchers.is("test@email.com")))
+                .andExpect(MockMvcResultMatchers
+                        .jsonPath("$.token", matchesPattern(tokenRegex)));
     }
 
     @Test
@@ -91,18 +94,21 @@ class AuthRestControllerTest {
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errors[0].message", Matchers.is("must not be empty")))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errors[1].message", Matchers.is("must not be empty")));
+                .andExpect(MockMvcResultMatchers
+                        .jsonPath("$.errors[0].message", Matchers.is("must not be blank")))
+                .andExpect(MockMvcResultMatchers
+                        .jsonPath("$.errors[1].message", Matchers.is("must not be blank")));
     }
 
     @Test
-    public void whenLoginCredentialsIncorrect_thenReturnStatus401() throws Exception {
+    public void whenLoginCredentialsIncorrect_thenReturnStatus403() throws Exception {
         AuthRequestDto requestDto = new AuthRequestDto();
         requestDto.setEmail("test@email.com");
         requestDto.setPassword("password");
+        BadCredentialsException badCredentialsException = new BadCredentialsException("invalid email or password");
 
         when(authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(requestDto.getEmail(),
-                requestDto.getPassword()))).thenThrow(BadCredentialsException.class);
+                requestDto.getPassword()))).thenThrow(badCredentialsException);
 
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.post("/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -138,8 +144,7 @@ class AuthRestControllerTest {
         registeredUser.setFirstName(requestDto.getFirstName());
         registeredUser.setLastName(requestDto.getLastName());
 
-        when(userService.findByEmail("test@email.com")).thenReturn(null);
-        when(userService.register(newUser)).thenReturn(registeredUser);
+        when(userService.register(requestDto)).thenReturn(registeredUser);
 
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.post("/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -166,7 +171,7 @@ class AuthRestControllerTest {
         alreadyRegisteredUser.setFirstName(requestDto.getFirstName());
         alreadyRegisteredUser.setLastName(requestDto.getLastName());
 
-        when(userService.findByEmail("test@email.com")).thenReturn(alreadyRegisteredUser);
+        when(userService.register(requestDto)).thenThrow(UserIsAlreadyRegisteredException.class);
 
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.post("/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -175,9 +180,7 @@ class AuthRestControllerTest {
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isBadRequest())
-                .andExpect(result -> assertTrue(result.getResolvedException() instanceof UserIsAlreadyRegisteredException))
-                .andExpect(result -> assertEquals("user with email test@email.com is already registered",
-                        result.getResolvedException().getMessage()));
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof UserIsAlreadyRegisteredException));
 
     }
 
@@ -197,12 +200,12 @@ class AuthRestControllerTest {
         mockMvc.perform(mockRequest)
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof MethodArgumentNotValidException))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errors[0].message", Matchers.is("must not be empty")))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errors[1].message", Matchers.is("must not be empty")))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errors[2].message", Matchers.is("must not be empty")));
-
+                .andExpect(MockMvcResultMatchers
+                        .jsonPath("$.errors[0].message", Matchers.is("must not be blank")))
+                .andExpect(MockMvcResultMatchers
+                        .jsonPath("$.errors[1].message", Matchers.is("must not be blank")))
+                .andExpect(MockMvcResultMatchers
+                        .jsonPath("$.errors[2].message", Matchers.is("must not be blank")));
 
     }
-
-
 }
