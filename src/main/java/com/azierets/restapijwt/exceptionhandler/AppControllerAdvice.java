@@ -5,6 +5,7 @@ import com.azierets.restapijwt.dto.ErrorDto;
 import com.azierets.restapijwt.exceptionhandler.exception.UserIsAlreadyRegisteredException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -23,10 +24,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @ControllerAdvice
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AppControllerAdvice implements AuthenticationEntryPoint {
 
-    private ObjectMapper mapper;
+    private final ObjectMapper mapper;
 
     @ExceptionHandler(UserIsAlreadyRegisteredException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

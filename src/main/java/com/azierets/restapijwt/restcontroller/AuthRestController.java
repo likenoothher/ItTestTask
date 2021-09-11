@@ -20,7 +20,6 @@ public class AuthRestController {
     @PostMapping("/login")
     public CredentialsDto login(@RequestBody @Valid AuthRequestDto requestDto) {
         return userService.authenticate(requestDto);
-
     }
 
     @PostMapping("/register")
