@@ -56,8 +56,11 @@ class UserRepositoryTest {
 
     @Test
     void whenFindByEmailAndUserDoesNotExist_thenReturnNull() {
-        User found = userRepository.findByEmail("notExistedEmail@test.com");
+        assertNull(userRepository.findByEmail("notExistedEmail@test.com"));
+    }
 
-        assertNull(found);
+    @Test
+    void whenFindByEmailAndUserNull_thenReturnNull() {
+        assertNull(userRepository.findByEmail(null));
     }
 }

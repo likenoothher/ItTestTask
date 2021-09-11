@@ -5,7 +5,6 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class ValidationViolationDto {
-    private String fieldName;
+public class GreetingDto {
     private String message;
 }

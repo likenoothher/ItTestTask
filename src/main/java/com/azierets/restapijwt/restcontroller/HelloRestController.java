@@ -1,10 +1,9 @@
 package com.azierets.restapijwt.restcontroller;
 
-import com.azierets.restapijwt.model.User;
+import com.azierets.restapijwt.dto.GreetingDto;
 import com.azierets.restapijwt.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,9 +17,9 @@ public class HelloRestController {
 
     private final UserService userService;
 
-    @GetMapping({"", "/"})
-    public ResponseEntity<?> hello(Principal principal) {
-        User user = userService.findByEmail(principal.getName());
-        return new ResponseEntity<>("Hello, " + user.getFirstName(), HttpStatus.OK);
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping
+    public GreetingDto hello(Principal principal) {
+        return userService.createGreetingMessage(principal.getName());
     }
 }
