@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+#    image: 'test:latest'
+    ports:
+      - "8080:8080"
+    depends_on:
+     - db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - LIQUIBASE_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres
+      - LIQUIBASE_DATASOURCE_USER=postgres
+      - LIQUIBASE_DATASOURCE_PASSWORD:password
+      - JWT_TOKEN_SECRET=qwerty
+
+  db:
+    image: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
