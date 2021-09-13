@@ -4,7 +4,6 @@ import com.azierets.restapijwt.dto.CredentialsViolationDto;
 import com.azierets.restapijwt.dto.ErrorDto;
 import com.azierets.restapijwt.exceptionhandler.exception.UserIsAlreadyRegisteredException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;

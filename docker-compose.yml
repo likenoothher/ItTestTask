@@ -8,14 +8,11 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-     - db
+      - db
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
-      - LIQUIBASE_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres
-      - LIQUIBASE_DATASOURCE_USER=postgres
-      - LIQUIBASE_DATASOURCE_PASSWORD:password
       - JWT_TOKEN_SECRET=qwerty
 
   db:
