@@ -63,10 +63,11 @@ class UserServiceImplTest {
         authRequestDto = new AuthRequestDto();
         authRequestDto.setEmail("test@email.com");
         authRequestDto.setPassword("password");
+
     }
 
     @Test
-    public void whenCreateGreetingMessageEmailExists_thenReturnGreetingDto() {
+    public void whenCreateGreetingMessageEmailExists_thenReturnGreetingDto1111111111111111111111111111111111111111111111111() {
         when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
         GreetingDto dto = userService.createGreetingMessage(user.getEmail());
 
