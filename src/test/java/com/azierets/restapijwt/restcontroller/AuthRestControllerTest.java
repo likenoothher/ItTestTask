@@ -178,7 +178,6 @@ class AuthRestControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertTrue(result.getResolvedException()
                         instanceof UserIsAlreadyRegisteredException));
-
     }
 
     @Test
@@ -201,6 +200,5 @@ class AuthRestControllerTest {
                 .andExpect(jsonPath("$.errors[0].message", Matchers.is("must not be blank")))
                 .andExpect(jsonPath("$.errors[1].message", Matchers.is("must not be blank")))
                 .andExpect(jsonPath("$.errors[2].message", Matchers.is("must not be blank")));
-
     }
 }

@@ -52,6 +52,5 @@ class HelloRestControllerTest {
         this.mockMvc.perform(get("/hello"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Hello, userFirstName")));
-
     }
 }

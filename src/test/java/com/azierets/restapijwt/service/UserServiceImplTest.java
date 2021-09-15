@@ -63,7 +63,6 @@ class UserServiceImplTest {
         authRequestDto = new AuthRequestDto();
         authRequestDto.setEmail("test@email.com");
         authRequestDto.setPassword("password");
-
     }
 
     @Test
