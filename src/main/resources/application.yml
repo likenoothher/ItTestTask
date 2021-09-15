@@ -1,0 +1,36 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: springJwt
+
+  liquibase:
+    enabled: true
+    change-log: classpath:liquibase/db.changelog-master.yaml
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USER}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+jwt:
+  token:
+    secret: ${JWT_TOKEN_SECRET}
+    expired: 6000000000
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+
