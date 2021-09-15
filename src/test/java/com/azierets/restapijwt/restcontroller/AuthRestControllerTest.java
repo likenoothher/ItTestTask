@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthRestControllerTest {
 
     @Autowired
-    ObjectMapper mapper;
+    private ObjectMapper mapper;
 
     @Autowired
     private MockMvc mockMvc;
@@ -176,7 +176,8 @@ class AuthRestControllerTest {
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isBadRequest())
-                .andExpect(result -> assertTrue(result.getResolvedException() instanceof UserIsAlreadyRegisteredException));
+                .andExpect(result -> assertTrue(result.getResolvedException()
+                        instanceof UserIsAlreadyRegisteredException));
 
     }
 
@@ -195,7 +196,8 @@ class AuthRestControllerTest {
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isBadRequest())
-                .andExpect(result -> assertTrue(result.getResolvedException() instanceof MethodArgumentNotValidException))
+                .andExpect(result -> assertTrue(result.getResolvedException()
+                        instanceof MethodArgumentNotValidException))
                 .andExpect(jsonPath("$.errors[0].message", Matchers.is("must not be blank")))
                 .andExpect(jsonPath("$.errors[1].message", Matchers.is("must not be blank")))
                 .andExpect(jsonPath("$.errors[2].message", Matchers.is("must not be blank")));

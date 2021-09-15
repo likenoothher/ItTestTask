@@ -34,3 +34,10 @@ build/
 
 ###Docker###
 *.env
+
+### Gradle ###
+.gradle
+/build/
+
+### PostgreSQL Data ###
+pg_data/

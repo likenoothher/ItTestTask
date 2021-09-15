@@ -67,7 +67,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    public void whenCreateGreetingMessageEmailExists_thenReturnGreetingDto1111111111111111111111111111111111111111111111111() {
+    public void whenCreateGreetingMessageEmailExists_thenReturnGreetingDto() {
         when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
         GreetingDto dto = userService.createGreetingMessage(user.getEmail());
 

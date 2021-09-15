@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   main-app:
-    container_name: jwttokenapp
+    container_name: springJwtApp
     build:
       context: .
       dockerfile: Dockerfile
