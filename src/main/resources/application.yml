@@ -1,3 +1,5 @@
+server:
+  port:${SPRING_JWT_APP_PORT}
 spring:
   profiles:
     active: dev
@@ -17,10 +19,19 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
-jwt:
-  token:
-    secret: ${JWT_TOKEN_SECRET}
-    expired: 6000000000
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    template:
+      exchange: ${RABBITMQ_EXCHANGE}
+      queue-name: ${RABBITMQ_QUEUE_NAME}
+
+  jwt:
+    token:
+      secret: ${JWT_TOKEN_SECRET}
+      expired: ${JWT_TOKEN_EXPIRED}
 
 ---
 spring:

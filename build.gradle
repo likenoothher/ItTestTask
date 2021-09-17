@@ -38,6 +38,8 @@ dependencies {
     testImplementation group: 'org.hamcrest', name: 'hamcrest-core', version: '2.2'
     implementation group: 'org.mapstruct', name: 'mapstruct', version: '1.4.2.Final'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.2.Final'
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    testImplementation 'org.springframework.amqp:spring-rabbit-test'
 
 }
 
@@ -46,5 +48,12 @@ test {
     environment("JWT_TOKEN_SECRET", "qwerty")
     environment("SPRING_DATASOURCE_URL", "jdbc:h2:mem:test")
     environment("spring_datasource_driverClassName", "org.h2.Driver")
-
+    environment("JWT_TOKEN_SECRET", "qwerty")
+    environment("SPRING_RABBITMQ_HOST", "localhost")
+    environment("SPRING_RABBITMQ_PORT", "5672")
+    environment("SPRING_RABBITMQ_USERNAME", "guest")
+    environment("SPRING_RABBITMQ_PASSWORD", "guest")
+    environment("SPRING_RABBITMQ_TEMPLATE_EXCHANGE", "springJwtExchange")
+    environment("SPRING_RABBITMQ_TEMPLATE_QUEUE-NAME", "springJwtLoggingQueue")
+    environment("JWT_TOKEN_EXPIRED", "60000000")
 }
