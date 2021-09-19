@@ -1,0 +1,47 @@
+server:
+  port:${SPRING_JWT_APP_PORT}
+spring:
+  profiles:
+    active: dev
+  application:
+    name: springJwt
+
+  liquibase:
+    enabled: true
+    change-log: classpath:liquibase/db.changelog-master.yaml
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USER}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    template:
+      exchange: ${RABBITMQ_EXCHANGE}
+      queue-name: ${RABBITMQ_QUEUE_NAME}
+
+  jwt:
+    token:
+      secret: ${JWT_TOKEN_SECRET}
+      expired: ${JWT_TOKEN_EXPIRED}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+

@@ -18,7 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -36,12 +36,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-@TestPropertySource(
-        locations = "classpath:application-test.properties")
+@ActiveProfiles("test")
 class AuthRestControllerTest {
 
     @Autowired
-    ObjectMapper mapper;
+    private ObjectMapper mapper;
 
     @Autowired
     private MockMvc mockMvc;
@@ -176,8 +175,8 @@ class AuthRestControllerTest {
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isBadRequest())
-                .andExpect(result -> assertTrue(result.getResolvedException() instanceof UserIsAlreadyRegisteredException));
-
+                .andExpect(result -> assertTrue(result.getResolvedException()
+                        instanceof UserIsAlreadyRegisteredException));
     }
 
     @Test
@@ -195,10 +194,10 @@ class AuthRestControllerTest {
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isBadRequest())
-                .andExpect(result -> assertTrue(result.getResolvedException() instanceof MethodArgumentNotValidException))
+                .andExpect(result -> assertTrue(result.getResolvedException()
+                        instanceof MethodArgumentNotValidException))
                 .andExpect(jsonPath("$.errors[0].message", Matchers.is("must not be blank")))
                 .andExpect(jsonPath("$.errors[1].message", Matchers.is("must not be blank")))
                 .andExpect(jsonPath("$.errors[2].message", Matchers.is("must not be blank")));
-
     }
 }

@@ -9,7 +9,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithUserDetails;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
@@ -24,8 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         classes = AuthTestConfig.class)
 @AutoConfigureMockMvc
-@TestPropertySource(
-        locations = "classpath:application-test.properties")
+@ActiveProfiles("test")
 class HelloRestControllerTest {
 
     @Autowired
@@ -52,6 +51,5 @@ class HelloRestControllerTest {
         this.mockMvc.perform(get("/hello"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Hello, userFirstName")));
-
     }
 }

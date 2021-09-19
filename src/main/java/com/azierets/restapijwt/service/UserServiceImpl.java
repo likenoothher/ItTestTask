@@ -7,6 +7,8 @@ import com.azierets.restapijwt.dto.RegisterRequestDto;
 import com.azierets.restapijwt.dto.UserMapper;
 import com.azierets.restapijwt.exceptionhandler.exception.UserIsAlreadyRegisteredException;
 import com.azierets.restapijwt.model.User;
+import com.azierets.restapijwt.rabbit.RabbitMessageSender;
+import com.azierets.restapijwt.rabbit.messagedto.LoggingMessageDto;
 import com.azierets.restapijwt.repository.UserRepository;
 import com.azierets.restapijwt.security.jwt.JwtService;
 import com.azierets.restapijwt.security.jwt.JwtUser;
@@ -26,6 +28,7 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
     private final UserMapper userMapper;
     private final AuthenticationManager authenticationManager;
+    private final RabbitMessageSender rabbitMessageSender;
 
     @Override
     public GreetingDto createGreetingMessage(String email) {
@@ -43,6 +46,7 @@ public class UserServiceImpl implements UserService {
         requestDto.setRole("USER");
         User newUser = userMapper.registerRequestDtoToUser(requestDto);
         userRepository.save(newUser);
+        rabbitMessageSender.sendMessage(new LoggingMessageDto(userEmail, System.currentTimeMillis()));
         return new CredentialsDto(newUser.getEmail(), jwtService.generateToken(newUser));
     }
 
@@ -58,6 +62,7 @@ public class UserServiceImpl implements UserService {
                 requestDto.getPassword()));
         User user = userRepository.findByEmail(userEmail);
         String token = jwtService.generateToken(user);
+        rabbitMessageSender.sendMessage(new LoggingMessageDto(userEmail, System.currentTimeMillis()));
         return new CredentialsDto(userEmail, token);
     }
 

@@ -1,0 +1,62 @@
+version: '3.8'
+services:
+  main-app:
+    container_name: springJwtApp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - rabbitmq
+    environment:
+      - SPRING_DATASOURCE_URL=${DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${PASSWORD}
+      - JWT_TOKEN_SECRET=${JWT_TOKEN_SECRET}
+      - JWT_TOKEN_EXPIRED=${JWT_TOKEN_EXPIRED}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE}
+      - RABBITMQ_QUEUE_NAME=${RABBITMQ_QUEUE_NAME}
+
+  main-app-listener:
+    container_name: springJwtAppListener
+    image: srpingjwtlistener:latest
+    depends_on:
+      - rabbitmq
+    environment:
+      - SPRING_JWT_LISTENER_APP_PORT=${SPRING_JWT_LISTENER_APP_PORT}
+      - RABBITMQ_QUEUE_NAME=${RABBITMQ_QUEUE_NAME}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - TZ=Europe/Minsk
+
+  rabbitmq:
+    container_name: rabbitMqSpringJwt
+    image: rabbitmq:management
+    ports:
+      - "5672"
+      - "15672:15672"
+    restart: always
+
+  db:
+    image: postgres
+    container_name: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_PASSWORD=${PASSWORD}
+      - POSTGRES_USER=${USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  pg_data:
