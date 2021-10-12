@@ -34,22 +34,22 @@ public class RabbitMqConfig {
     private String rabbitMqQueueName;
 
     @Bean
-    Queue loggingQueue() {
+    public Queue loggingQueue() {
         return new Queue(rabbitMqQueueName, true);
     }
 
     @Bean
-    FanoutExchange loggingExchange() {
+    public FanoutExchange loggingExchange() {
         return new FanoutExchange(rabbitMqExchangeName);
     }
 
     @Bean
-    Binding loggingBinding(Queue loggingQueue, FanoutExchange exchange) {
+    public Binding loggingBinding(Queue loggingQueue, FanoutExchange exchange) {
         return BindingBuilder.bind(loggingQueue).to(exchange);
     }
 
     @Bean
-    CachingConnectionFactory connectionFactory() {
+    public CachingConnectionFactory connectionFactory() {
         CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(rabbitMqHost);
         cachingConnectionFactory.setPort(rabbitMqPort);
         cachingConnectionFactory.setUsername(rabbitMqUser);

@@ -1,0 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+embedded:
+  postgresql:
+    docker-image: 'postgres:11-alpine'
+    database: postgres
+  redis:
+    docker-image: 'redis:5.0.3-alpine'
+    requirepass: false
+  rabbitmq:
+    password: guest
