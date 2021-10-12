@@ -127,7 +127,7 @@ class AuthRestControllerTest {
 
 
     @Test
-    public void whenRegisterRequestBodyCorrect_thenReturnStatus200() throws Exception {
+    public void whenRegisterRequestBodyCorrect_thenReturnStatus200AndToken() throws Exception {
         RegisterRequestDto requestDto = new RegisterRequestDto();
         requestDto.setEmail("test@email.com");
         requestDto.setPassword("password");

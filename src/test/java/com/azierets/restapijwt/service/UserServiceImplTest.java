@@ -4,14 +4,19 @@ import com.azierets.restapijwt.dto.AuthRequestDto;
 import com.azierets.restapijwt.dto.CredentialsDto;
 import com.azierets.restapijwt.dto.GreetingDto;
 import com.azierets.restapijwt.dto.RegisterRequestDto;
+import com.azierets.restapijwt.dto.UserMapper;
 import com.azierets.restapijwt.model.User;
 import com.azierets.restapijwt.model.UserRole;
+import com.azierets.restapijwt.rabbit.RabbitMessageSender;
+import com.azierets.restapijwt.rabbit.messagedto.LoggingMessageDto;
 import com.azierets.restapijwt.repository.UserRepository;
+import com.azierets.restapijwt.security.jwt.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,25 +24,42 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
 class UserServiceImplTest {
 
-    @MockBean
+    @Mock
     private UserRepository userRepository;
 
-    @MockBean
+    @Mock
+    private BCryptPasswordEncoder passwordEncoder;
+
+    @Mock
+    private JwtService jwtService;
+
+    @Mock
+    private UserMapper userMapper;
+
+    @Mock
     private AuthenticationManager authenticationManager;
 
-    @Autowired
-    private UserService userService;
+    @Mock
+    private RabbitMessageSender rabbitMessageSender;
+
+    @InjectMocks
+    private UserServiceImpl userService;
 
     private User user;
     private RegisterRequestDto registerRequestDto;
@@ -67,15 +89,21 @@ class UserServiceImplTest {
     @Test
     public void whenCreateGreetingMessageEmailExists_thenReturnGreetingDto() {
         when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
+
         GreetingDto dto = userService.createGreetingMessage(user.getEmail());
 
         assertEquals("Hello, testFirstName", dto.getMessage());
+
+        verify(userRepository).findByEmail(user.getEmail());
     }
 
     @Test
     public void whenCreateGreetingMessageEmailDoesNotExist_thenThrowNPException() {
         when(userRepository.findByEmail(user.getEmail())).thenReturn(null);
-        assertThrows(NullPointerException.class, () -> userService.createGreetingMessage(null));
+
+        assertThrows(NullPointerException.class, () -> userService.createGreetingMessage(user.getEmail()));
+
+        verify(userRepository).findByEmail(user.getEmail());
     }
 
     @Test
@@ -87,18 +115,34 @@ class UserServiceImplTest {
     @Test
     public void whenRegisterUserPassedDtoNotNull_thenReturnUserWithEncryptedPasswordAndRoleUser() {
         when(userRepository.existsByEmail(registerRequestDto.getEmail())).thenReturn(false);
+        when(passwordEncoder.encode(registerRequestDto.getPassword())).thenReturn("encodedPassword");
+        when(userMapper.registerRequestDtoToUser(registerRequestDto)).thenReturn(user);
+        when(userRepository.save(user)).thenReturn(user);
+        doNothing().when(rabbitMessageSender).sendMessage(any());
+        when(jwtService.generateToken(user)).thenReturn("generatedToken");
+
+        String generatedToken = "generatedToken";
         CredentialsDto dto = userService.register(registerRequestDto);
 
-        String tokenRegex = "^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*$";
-
         assertEquals(user.getEmail(), dto.getEmail());
-        assertTrue(dto.getToken().matches(tokenRegex));
+        assertEquals(generatedToken, dto.getToken());
+
+        verify(userRepository).existsByEmail(registerRequestDto.getEmail());
+        verify(passwordEncoder).encode("password");
+        verify(userMapper).registerRequestDtoToUser(registerRequestDto);
+        verify(userRepository).save(user);
+        verify(rabbitMessageSender).sendMessage(any(LoggingMessageDto.class));
+        verify(jwtService).generateToken(user);
     }
 
     @Test
-    public void whenRegisterUserPassedDtoPasswordFieldIsNull_thenThrowIAException() {
+    public void whenRegisterUserPassedDtoPasswordFieldIsNull_thenThrowNPException() {
         registerRequestDto.setPassword(null);
-        assertThrows(IllegalArgumentException.class, () -> userService.register(registerRequestDto));
+        when(userRepository.existsByEmail(registerRequestDto.getEmail())).thenReturn(false);
+
+        assertThrows(NullPointerException.class, () -> userService.register(registerRequestDto));
+
+        verify(userRepository).existsByEmail(registerRequestDto.getEmail());
     }
 
     @Test
@@ -108,15 +152,21 @@ class UserServiceImplTest {
 
     @Test
     public void whenAuthenticateRequestDtoNotNullUserExist_thenReturnToken() {
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(any());
         when(userRepository.findByEmail(registerRequestDto.getEmail())).thenReturn(user);
-        when(authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequestDto.getEmail(),
-                authRequestDto.getPassword()))).thenReturn(null);
+        when(jwtService.generateToken(user)).thenReturn("generatedToken");
+        doNothing().when(rabbitMessageSender).sendMessage(any());
 
+        String generatedToken = "generatedToken";
         CredentialsDto dto = userService.authenticate(authRequestDto);
-        String tokenRegex = "^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*$";
 
         assertEquals(user.getEmail(), dto.getEmail());
-        assertTrue(dto.getToken().matches(tokenRegex));
+        assertEquals(generatedToken, dto.getToken());
+
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(userRepository).findByEmail(registerRequestDto.getEmail());
+        verify(rabbitMessageSender).sendMessage(any(LoggingMessageDto.class));
+        verify(jwtService).generateToken(user);
     }
 
     @Test
@@ -126,8 +176,17 @@ class UserServiceImplTest {
 
     @Test
     public void whenAuthenticateRequestDtoNotNullUserDoesNotExist_thenThrowNPException() {
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(any());
         when(userRepository.findByEmail(authRequestDto.getEmail())).thenReturn(null);
+        doNothing().when(rabbitMessageSender).sendMessage(any());
+        when(jwtService.generateToken(null)).thenThrow(NullPointerException.class);
+
         assertThrows(NullPointerException.class, () -> userService.authenticate(authRequestDto));
+
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(userRepository).findByEmail(registerRequestDto.getEmail());
+        verify(rabbitMessageSender).sendMessage(any(LoggingMessageDto.class));
+        verify(jwtService).generateToken(null);
     }
 
     @Test
@@ -135,7 +194,12 @@ class UserServiceImplTest {
         BadCredentialsException badCredentialsException = new BadCredentialsException("invalid email or password");
         when(authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequestDto.getEmail(),
                 authRequestDto.getPassword()))).thenThrow(badCredentialsException);
+
         assertThrows(AuthenticationException.class, () -> userService.authenticate(authRequestDto));
+
+        verify(userRepository, times(0)).findByEmail(authRequestDto.getEmail());
+        verify(rabbitMessageSender, times(0)).sendMessage(any());
+        verify(jwtService, times(0)).generateToken(null);
     }
 
     @Test
@@ -150,16 +214,25 @@ class UserServiceImplTest {
         assertTrue(jwtUser.isAccountNonLocked());
         assertTrue(jwtUser.isCredentialsNonExpired());
         assertTrue(jwtUser.isEnabled());
+
+        verify(userRepository).findByEmail(authRequestDto.getEmail());
     }
 
     @Test
     public void whenLoadByUserNameUserEmailDoesNotExist_thenThrowUsernameNotFoundException() {
         when(userRepository.findByEmail(authRequestDto.getEmail())).thenReturn(null);
+
         assertThrows(UsernameNotFoundException.class, () -> userService.loadUserByUsername(authRequestDto.getEmail()));
+
+        verify(userRepository).findByEmail(authRequestDto.getEmail());
     }
 
     @Test
     public void whenLoadByUserNameUserEmailNull_thenThrowNPException() {
+        when(userRepository.findByEmail(null)).thenReturn(null);
+
         assertThrows(UsernameNotFoundException.class, () -> userService.loadUserByUsername(null));
+
+        verify(userRepository).findByEmail(null);
     }
 }

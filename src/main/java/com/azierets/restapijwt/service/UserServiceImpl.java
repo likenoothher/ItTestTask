@@ -13,6 +13,7 @@ import com.azierets.restapijwt.repository.UserRepository;
 import com.azierets.restapijwt.security.jwt.JwtService;
 import com.azierets.restapijwt.security.jwt.JwtUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,6 +32,7 @@ public class UserServiceImpl implements UserService {
     private final RabbitMessageSender rabbitMessageSender;
 
     @Override
+    @Cacheable(value = "CachedGreetings", unless = "#email == null")
     public GreetingDto createGreetingMessage(String email) {
         User user = userRepository.findByEmail(email);
         return new GreetingDto("Hello, " + user.getFirstName());
@@ -40,7 +42,7 @@ public class UserServiceImpl implements UserService {
     public CredentialsDto register(RegisterRequestDto requestDto) {
         String userEmail = requestDto.getEmail();
         if (userRepository.existsByEmail(userEmail)) {
-            throw new UserIsAlreadyRegisteredException("пользователь с email " + userEmail + " уже зарегестрирован");
+            throw new UserIsAlreadyRegisteredException("пользователь с email " + userEmail + " уже зарегистрирован");
         }
         requestDto.setPassword(passwordEncoder.encode(requestDto.getPassword()));
         requestDto.setRole("USER");
@@ -61,9 +63,8 @@ public class UserServiceImpl implements UserService {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userEmail,
                 requestDto.getPassword()));
         User user = userRepository.findByEmail(userEmail);
-        String token = jwtService.generateToken(user);
         rabbitMessageSender.sendMessage(new LoggingMessageDto(userEmail, System.currentTimeMillis()));
-        return new CredentialsDto(userEmail, token);
+        return new CredentialsDto(userEmail, jwtService.generateToken(user));
     }
 
     @Override

@@ -10,6 +10,7 @@ services:
     depends_on:
       - db
       - rabbitmq
+      - redis
     environment:
       - SPRING_DATASOURCE_URL=${DATASOURCE_URL}
       - SPRING_DATASOURCE_USERNAME=${USERNAME}
@@ -22,12 +23,15 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE}
       - RABBITMQ_QUEUE_NAME=${RABBITMQ_QUEUE_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
 
   main-app-listener:
     container_name: springJwtAppListener
-    image: srpingjwtlistener:latest
+    image: srpingjwtlistener
     depends_on:
       - rabbitmq
+      - main-app
     environment:
       - SPRING_JWT_LISTENER_APP_PORT=${SPRING_JWT_LISTENER_APP_PORT}
       - RABBITMQ_QUEUE_NAME=${RABBITMQ_QUEUE_NAME}
@@ -41,8 +45,16 @@ services:
     container_name: rabbitMqSpringJwt
     image: rabbitmq:management
     ports:
-      - "5672"
+      - "5672:5672"
       - "15672:15672"
+    restart: always
+
+  redis:
+    container_name: redisSpringJwt
+    image: redis
+    hostname: redis
+    ports:
+      - "6379:6379"
     restart: always
 
   db:

@@ -22,38 +22,39 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.projectlombok:lombok:1.18.20'
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'org.postgresql:postgresql'
+
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'com.h2database:h2'
-    runtimeOnly 'org.postgresql:postgresql'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
     implementation group: 'org.liquibase', name: 'liquibase-core', version: '4.4.3'
     implementation group: 'io.jsonwebtoken', name: 'jjwt', version: '0.9.1'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-validation', version: '2.5.4'
+    implementation group: 'org.springframework.data', name: 'spring-data-redis', version: '2.5.5'
+    implementation group: 'redis.clients', name: 'jedis', version: '3.7.0'
+    implementation group: 'org.mapstruct', name: 'mapstruct', version: '1.4.2.Final'
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    implementation group: 'org.springframework.cloud', name: 'spring-cloud-starter-bootstrap', version: '3.0.4'
+    implementation group: 'org.springframework.cloud', name: 'spring-cloud-starter-config', version: '3.0.4'
+
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.2.Final'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testImplementation group: 'org.springframework.security', name: 'spring-security-test', version: '5.5.1'
     testImplementation group: 'org.hamcrest', name: 'hamcrest-core', version: '2.2'
-    implementation group: 'org.mapstruct', name: 'mapstruct', version: '1.4.2.Final'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.2.Final'
-    implementation 'org.springframework.boot:spring-boot-starter-amqp'
-    testImplementation 'org.springframework.amqp:spring-rabbit-test'
+    testImplementation "org.testcontainers:testcontainers:1.16.0"
+    testImplementation "org.testcontainers:junit-jupiter:1.16.0"
+    testImplementation group: 'com.playtika.testcontainers', name: 'embedded-rabbitmq', version: '2.0.14'
+    testImplementation group: 'com.playtika.testcontainers', name: 'embedded-redis', version: '2.0.14'
+    testImplementation group: 'com.playtika.testcontainers', name: 'embedded-postgresql', version: '2.0.14'
+    testImplementation 'org.awaitility:awaitility-scala:4.1.0'
 
 }
 
 test {
     useJUnitPlatform()
-    environment("JWT_TOKEN_SECRET", "qwerty")
-    environment("SPRING_DATASOURCE_URL", "jdbc:h2:mem:test")
-    environment("spring_datasource_driverClassName", "org.h2.Driver")
-    environment("JWT_TOKEN_SECRET", "qwerty")
-    environment("SPRING_RABBITMQ_HOST", "localhost")
-    environment("SPRING_RABBITMQ_PORT", "5672")
-    environment("SPRING_RABBITMQ_USERNAME", "guest")
-    environment("SPRING_RABBITMQ_PASSWORD", "guest")
-    environment("SPRING_RABBITMQ_TEMPLATE_EXCHANGE", "springJwtExchange")
-    environment("SPRING_RABBITMQ_TEMPLATE_QUEUE-NAME", "springJwtLoggingQueue")
-    environment("JWT_TOKEN_EXPIRED", "60000000")
 }
