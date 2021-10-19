@@ -5,6 +5,7 @@ import com.azierets.restapijwt.dto.CredentialsDto;
 import com.azierets.restapijwt.dto.GreetingDto;
 import com.azierets.restapijwt.dto.RegisterRequestDto;
 import com.azierets.restapijwt.dto.UserMapper;
+import com.azierets.restapijwt.exceptionhandler.exception.UserIsAlreadyRegisteredException;
 import com.azierets.restapijwt.model.User;
 import com.azierets.restapijwt.model.UserRole;
 import com.azierets.restapijwt.rabbit.RabbitMessageSender;
@@ -25,7 +26,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,7 +37,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@ActiveProfiles("test")
 class UserServiceImplTest {
 
     @Mock
@@ -146,8 +145,26 @@ class UserServiceImplTest {
     }
 
     @Test
+    public void whenRegisterUserPassedDtoAndUserAlreadyExists_thenThrowUserIsAlreadyRegisteredException() {
+        when(userRepository.existsByEmail(registerRequestDto.getEmail())).thenReturn(true);
+
+        assertThrows(UserIsAlreadyRegisteredException.class, () -> userService.register(registerRequestDto));
+
+        verify(userRepository).existsByEmail(registerRequestDto.getEmail());
+    }
+
+    @Test
     public void whenRegisterUserPassedDtoNull_thenThrowNPException() {
         assertThrows(NullPointerException.class, () -> userService.register(null));
+    }
+
+    @Test
+    public void whenFindByEmail_thenUserRepositoryCall() {
+        when(userRepository.findByEmail(registerRequestDto.getEmail())).thenReturn(user);
+
+        userService.findByEmail(registerRequestDto.getEmail());
+
+        verify(userRepository).findByEmail(registerRequestDto.getEmail());
     }
 
     @Test
