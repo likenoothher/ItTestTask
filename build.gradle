@@ -3,6 +3,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id 'checkstyle'
+    id 'jacoco'
 }
 
 apply from: "gradle/checkstyle/checkstyle.gradle"
@@ -52,4 +53,63 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
+
+jacoco {
+    toolVersion = "0.8.7"
+    reportsDirectory = layout.buildDirectory.dir('customJacocoReportDir')
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    'com/azierets/restapijwt/config/*',
+                    'com/azierets/restapijwt/dto/*',
+                    'com/azierets/restapijwt/rabbit/messagedto/*',
+                    'com/azierets/restapijwt/exceptionhandler/exception/*',
+                    'com/azierets/restapijwt/model/*'
+            ])
+        }))
+    }
+
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+}
+
+jacocoTestCoverageVerification {
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    'com/azierets/restapijwt/config/*',
+                    'com/azierets/restapijwt/dto/*',
+                    'com/azierets/restapijwt/rabbit/messagedto/*',
+                    'com/azierets/restapijwt/exceptionhandler/exception/*',
+                    'com/azierets/restapijwt/model/*'
+            ])
+        }))
+    }
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.90
+                counter = 'LINE'
+            }
+        }
+
+        rule {
+            limit {
+                minimum = 0.80
+                counter = 'BRANCH'
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
