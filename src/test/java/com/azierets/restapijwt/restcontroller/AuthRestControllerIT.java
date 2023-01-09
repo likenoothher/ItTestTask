@@ -21,6 +21,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import javax.transaction.Transactional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.text.MatchesPattern.matchesPattern;
@@ -55,6 +57,8 @@ public class AuthRestControllerIT {
     @Test
     public void whenRegisterRequestBodyCorrect_thenReturnStatus200AndToken() throws Exception {
         String testEmailName = "test@email.com";
+        int expectedMessageAmount = 1;
+        CountDownLatch rabbitLock = new CountDownLatch(expectedMessageAmount);
 
         RegisterRequestDto requestDto = new RegisterRequestDto();
         requestDto.setEmail(testEmailName);
@@ -69,19 +73,23 @@ public class AuthRestControllerIT {
                 .accept(MediaType.APPLICATION_JSON)
                 .content(this.mapper.writeValueAsString(requestDto));
 
-        listener.resetCounter();
+        listener.setLatch(rabbitLock);
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email", is(testEmailName)))
                 .andExpect(jsonPath("$.token", matchesPattern(tokenRegex)));
 
-        assertEquals(1, listener.getMessageCounter());
+        assertTrue(rabbitLock.await(5, TimeUnit.SECONDS));
+        assertEquals(expectedMessageAmount, listener.getMessageCounter());
         assertTrue(userRepository.existsByEmail("test@email.com"));
     }
 
     @Test
     public void whenLoginRequestBodyCorrect_thenReturnStatus200AndToken() throws Exception {
+        int expectedMessageAmount = 1;
+        CountDownLatch rabbitLock = new CountDownLatch(expectedMessageAmount);
+
         AuthRequestDto requestDto = new AuthRequestDto();
         requestDto.setEmail("test@email.com");
         requestDto.setPassword("password");
@@ -104,13 +112,14 @@ public class AuthRestControllerIT {
                 .accept(MediaType.APPLICATION_JSON)
                 .content(this.mapper.writeValueAsString(requestDto));
 
-        listener.resetCounter();
+        listener.setLatch(rabbitLock);
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email", Matchers.is("test@email.com")))
                 .andExpect(jsonPath("$.token", matchesPattern(tokenRegex)));
 
-        assertEquals(1, listener.getMessageCounter());
+        assertTrue(rabbitLock.await(5, TimeUnit.SECONDS));
+        assertEquals(expectedMessageAmount, listener.getMessageCounter());
     }
 }

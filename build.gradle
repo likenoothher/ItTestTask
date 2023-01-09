@@ -3,6 +3,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id 'checkstyle'
+    id 'jacoco'
 }
 
 apply from: "gradle/checkstyle/checkstyle.gradle"
@@ -37,24 +38,78 @@ dependencies {
     implementation group: 'org.mapstruct', name: 'mapstruct', version: '1.4.2.Final'
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation group: 'org.springframework.cloud', name: 'spring-cloud-starter-bootstrap', version: '3.0.4'
-    implementation group: 'org.springframework.cloud', name: 'spring-cloud-starter-config', version: '3.0.4'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.2.Final'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation group: 'org.springframework.security', name: 'spring-security-test', version: '5.5.1'
     testImplementation group: 'org.hamcrest', name: 'hamcrest-core', version: '2.2'
-    testImplementation "org.testcontainers:testcontainers:1.16.0"
-    testImplementation "org.testcontainers:junit-jupiter:1.16.0"
+
     testImplementation group: 'com.playtika.testcontainers', name: 'embedded-rabbitmq', version: '2.0.14'
     testImplementation group: 'com.playtika.testcontainers', name: 'embedded-redis', version: '2.0.14'
     testImplementation group: 'com.playtika.testcontainers', name: 'embedded-postgresql', version: '2.0.14'
-    testImplementation 'org.awaitility:awaitility-scala:4.1.0'
-
 }
 
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
+
+jacoco {
+    toolVersion = "0.8.7"
+    reportsDirectory = layout.buildDirectory.dir('customJacocoReportDir')
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    'com/azierets/restapijwt/config/*',
+                    'com/azierets/restapijwt/dto/*',
+                    'com/azierets/restapijwt/rabbit/messagedto/*',
+                    'com/azierets/restapijwt/exceptionhandler/exception/*',
+                    'com/azierets/restapijwt/model/*'
+            ])
+        }))
+    }
+
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+}
+
+jacocoTestCoverageVerification {
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    'com/azierets/restapijwt/config/*',
+                    'com/azierets/restapijwt/dto/*',
+                    'com/azierets/restapijwt/rabbit/messagedto/*',
+                    'com/azierets/restapijwt/exceptionhandler/exception/*',
+                    'com/azierets/restapijwt/model/*'
+            ])
+        }))
+    }
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.90
+                counter = 'LINE'
+            }
+        }
+
+        rule {
+            limit {
+                minimum = 0.80
+                counter = 'BRANCH'
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
